@@ -23,8 +23,11 @@ import static zera.hmdp.utils.RedisConstants.*;
 @Slf4j
 public class CacheClient {
 
-    @Resource
     private StringRedisTemplate stringRedisTemplate;
+
+    public CacheClient(StringRedisTemplate stringRedisTemplate) {
+        this.stringRedisTemplate = stringRedisTemplate;
+    }
 
     public void set(String key, Object value, Long time, TimeUnit timeUnit){
         stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(value),time,timeUnit);
