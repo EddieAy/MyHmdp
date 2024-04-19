@@ -1,6 +1,7 @@
 package zera.hmdp.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import zera.hmdp.dto.Result;
 import zera.hmdp.entity.Blog;
 
 /**
@@ -13,4 +14,9 @@ import zera.hmdp.entity.Blog;
  */
 public interface IBlogService extends IService<Blog> {
 
+    Result queryHotBlog(Integer current);
+
+    Result queryBlogById(Long id);
+
+    Result likeBlog(Long id);
 }
