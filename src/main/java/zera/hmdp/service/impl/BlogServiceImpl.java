@@ -190,8 +190,7 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
             queryBlogUser(blog);
             isBlogLiked(blog);
         }
-
-
+        //666
         ScrollResult scrollResult = new ScrollResult();
         scrollResult.setList(blogs);
         scrollResult.setOffset(offset);
