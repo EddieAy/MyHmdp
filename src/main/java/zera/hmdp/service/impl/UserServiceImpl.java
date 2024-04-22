@@ -15,6 +15,7 @@ import zera.hmdp.dto.UserDTO;
 import zera.hmdp.entity.User;
 import zera.hmdp.mapper.UserMapper;
 import zera.hmdp.service.IUserService;
+import zera.hmdp.utils.RedisConstants;
 import zera.hmdp.utils.RegexUtils;
 import zera.hmdp.utils.UserHolder;
 
@@ -137,60 +138,46 @@ public class UserServiceImpl extends ServiceImpl<UserMapper,User> implements IUs
 
     @Override
     public Result sign() {
-        // 1.获取当前登录用户
         Long userId = UserHolder.getUser().getId();
-        // 2.获取日期
         LocalDateTime now = LocalDateTime.now();
-        // 3.拼接key
         String keySuffix = now.format(DateTimeFormatter.ofPattern(":yyyyMM"));
-        String key = USER_SIGN_KEY + userId + keySuffix;
-        // 4.获取今天是本月的第几天
-        int dayOfMonth = now.getDayOfMonth();
-        // 5.写入Redis SETBIT key offset 1
-        stringRedisTemplate.opsForValue().setBit(key, dayOfMonth - 1, true);
+        String key = RedisConstants.USER_SIGN_KEY + userId + keySuffix;
+        int dayOfMonth = now.getDayOfMonth() - 1;
+        stringRedisTemplate.opsForValue().setBit(key,dayOfMonth,true);
         return Result.ok();
+
     }
 
     @Override
     public Result signCount() {
-        // 1.获取当前登录用户
         Long userId = UserHolder.getUser().getId();
-        // 2.获取日期
         LocalDateTime now = LocalDateTime.now();
-        // 3.拼接key
         String keySuffix = now.format(DateTimeFormatter.ofPattern(":yyyyMM"));
-        String key = USER_SIGN_KEY + userId + keySuffix;
-        // 4.获取今天是本月的第几天
+        String key = RedisConstants.USER_SIGN_KEY + userId + keySuffix;
         int dayOfMonth = now.getDayOfMonth();
-        // 5.获取本月截止今天为止的所有的签到记录，返回的是一个十进制的数字 BITFIELD sign:5:202203 GET u14 0
-        List<Long> result = stringRedisTemplate.opsForValue().bitField(
-                key,
-                BitFieldSubCommands.create()
-                        .get(BitFieldSubCommands.BitFieldType.unsigned(dayOfMonth)).valueAt(0)
+
+        List<Long> results = stringRedisTemplate.opsForValue().bitField(
+                key, BitFieldSubCommands.create().
+                        get(BitFieldSubCommands.BitFieldType.unsigned(dayOfMonth)).valueAt(0)
         );
-        if (result == null || result.isEmpty()) {
-            // 没有任何签到结果
+        if(results == null || results.isEmpty()){
             return Result.ok(0);
         }
-        Long num = result.get(0);
-        if (num == null || num == 0) {
+        Long num = results.get(0);
+        if(num == null || num  == 0){
             return Result.ok(0);
         }
-        // 6.循环遍历
         int count = 0;
-        while (true) {
-            // 6.1.让这个数字与1做与运算，得到数字的最后一个bit位  // 判断这个bit位是否为0
+        while (true){
             if ((num & 1) == 0) {
-                // 如果为0，说明未签到，结束
                 break;
             }else {
-                // 如果不为0，说明已签到，计数器+1
                 count++;
             }
-            // 把数字右移一位，抛弃最后一个bit位，继续下一个bit位
             num >>>= 1;
         }
         return Result.ok(count);
+
     }
 
     private User createUserWithPhone(String phone) {
